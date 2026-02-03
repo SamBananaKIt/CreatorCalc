@@ -39,6 +39,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#111827">
     <style>
         :root {
             --background: 220 33% 98%;
@@ -294,12 +297,11 @@
     <div class="max-w-6xl mx-auto space-y-10 pb-20">
 
         <!-- Header -->
-        <header class="sticky top-0 z-50 flex items-center justify-between animate-enter backdrop-blur-lg bg-white/30 dark:bg-gray-900/30 -mx-4 px-4 md:-mx-8 md:px-8 py-4 border-b border-gray-200/10 dark:border-white/5 transition-all duration-300" style="animation-delay: 0.1s;">
+        <header
+            class="sticky top-0 z-50 flex items-center justify-between animate-enter backdrop-blur-lg bg-white/30 dark:bg-gray-900/30 -mx-4 px-4 md:-mx-8 md:px-8 py-4 border-b border-gray-200/10 dark:border-white/5 transition-all duration-300"
+            style="animation-delay: 0.1s;">
             <div class="flex items-center gap-4">
-                <div
-                    class="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-glow shadow-red-500/30">
-                    <i data-lucide="zap" class="text-white w-6 h-6"></i>
-                </div>
+                <img src="icon.png" alt="CreatorCalc Logo" class="w-12 h-12 rounded-2xl shadow-glow shadow-red-500/30">
                 <div>
                     <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white">CreatorCalc</h1>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Aurora Edition</p>
@@ -340,7 +342,8 @@
                         class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 group-focus-within:text-red-500 transition-colors">
                         <i data-lucide="video" class="w-3.5 h-3.5"></i> จำนวนคลิป / วัน
                     </label>
-                    <input type="text" id="input-videos" value="1" oninput="handleInput('videos', this.value)"
+                    <input type="text" id="input-videos" value="1" inputmode="decimal"
+                        oninput="handleInput('videos', this.value)"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
 
@@ -349,7 +352,8 @@
                         class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 group-focus-within:text-red-500 transition-colors">
                         <i data-lucide="eye" class="w-3.5 h-3.5"></i> ยอดวิวเฉลี่ย
                     </label>
-                    <input type="text" id="input-views" value="10,000" oninput="handleInput('views', this.value)"
+                    <input type="text" id="input-views" value="10,000" inputmode="decimal"
+                        oninput="handleInput('views', this.value)"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
 
@@ -359,7 +363,8 @@
                         <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> RPM (<span
                             id="rpm-currency-label">THB</span>)
                     </label>
-                    <input type="text" id="input-rpm" value="6" oninput="handleInput('rpm', this.value)"
+                    <input type="text" id="input-rpm" value="6" inputmode="decimal"
+                        oninput="handleInput('rpm', this.value)"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
             </div>
@@ -440,20 +445,17 @@
                     </div>
                     <p class="text-xs font-bold text-purple-500 uppercase tracking-wider">ภาษีโดยประมาณ</p>
                 </div>
-                <div class="space-y-1">
-                    <div class="flex justify-between items-end">
-                        <span class="text-xs text-gray-400">แบบขั้นบันได</span>
-                        <h3 id="res-tax-progressive" class="text-xl font-black text-purple-500 truncate-value">฿0.00
-                        </h3>
-                    </div>
-                    <div class="h-px bg-gray-200 dark:bg-white/10"></div>
+
+                <h3 id="res-tax-progressive" class="text-2xl font-black text-purple-500 truncate-value">฿0.00</h3>
+
+                <div class="space-y-1 pt-4 border-t border-gray-200/50 dark:border-white/5 mt-4">
                     <div class="flex justify-between items-end">
                         <span class="text-xs text-gray-400">Effective Rate</span>
-                        <h3 id="res-tax-effective"
-                            class="text-lg font-bold text-gray-500 dark:text-gray-400 truncate-value">0%</h3>
+                        <span id="res-tax-effective" class="text-sm font-bold text-purple-500/80">0%</span>
                     </div>
-                    <div class="pt-1 text-[10px] text-gray-400 text-right">
-                        *หักลดหย่อน 119k
+                    <div class="flex justify-between items-end">
+                        <span class="text-xs text-gray-400">Deduction Used</span>
+                        <span class="text-[10px] font-medium text-gray-400">*119k</span>
                     </div>
                 </div>
             </div>
@@ -608,12 +610,27 @@
         };
         let chartInstance = null;
 
+        // --- Persistence Utils ---
+        const saveData = () => {
+            const data = {
+                inputs,
+                currentCurrency
+            };
+            localStorage.setItem('creatorCalcData', JSON.stringify(data));
+        };
+
         // --- Formatting Utils ---
         const formatCurrency = (val) => {
-            return new Intl.NumberFormat(currentCurrency === 'THB' ? 'th-TH' : 'en-US', {
+            let formatted = new Intl.NumberFormat(currentCurrency === 'THB' ? 'th-TH' : 'en-US', {
                 style: 'currency', currency: currentCurrency,
                 minimumFractionDigits: 0, maximumFractionDigits: 0
             }).format(val);
+
+            // Fix: Add breathing room for Thai Baht symbol
+            if (currentCurrency === 'THB') {
+                return formatted.replace('฿', '฿ ');
+            }
+            return formatted;
         };
 
         const formatWithCommas = (val) => {
@@ -947,11 +964,13 @@
             const el = document.getElementById(`input-${key}`);
             const formatted = formatWithCommas(raw);
             if (el.value !== formatted) el.value = formatted;
+            saveData();
             calculate();
         };
 
         const handleYearChange = (val) => {
             inputs.years = parseInt(val);
+            saveData();
             calculate();
         };
 
@@ -970,6 +989,7 @@
             currentCurrency = curr;
             document.getElementById('rpm-currency-label').innerText = curr;
             document.getElementById('input-rpm').value = formatWithCommas(inputs.rpm);
+            saveData();
             calculate();
         };
 
@@ -989,9 +1009,32 @@
                 document.getElementById('theme-icon').dataset.lucide = 'moon';
             }
 
+            // Load Saved Data
+            const savedData = localStorage.getItem('creatorCalcData');
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed.inputs) inputs = { ...inputs, ...parsed.inputs };
+                    if (parsed.currentCurrency) currentCurrency = parsed.currentCurrency;
+                } catch (e) {
+                    console.error('Error loading data', e);
+                }
+            }
+
+            // Set Inputs to Saved Values
+            document.getElementById('input-videos').value = formatWithCommas(inputs.videos);
+            document.getElementById('input-views').value = formatWithCommas(inputs.views);
+            document.getElementById('input-rpm').value = formatWithCommas(inputs.rpm);
+            document.getElementById('years-slider').value = inputs.years;
+            document.getElementById('rpm-currency-label').innerText = currentCurrency;
+
             // Set initial button states
             if (currentCurrency === 'THB') {
                 document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
+                document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
+            } else {
+                document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
+                document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
             }
 
             // Init Spotlight Effect
