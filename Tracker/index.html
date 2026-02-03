@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Tracker - Aurora Edition</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tracker">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    },
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "#7F8CFF", // Violet-Blue
+                            foreground: "#FFFFFF",
+                        },
+                        secondary: {
+                            DEFAULT: "#A97CFF", // Lavender
+                            foreground: "#FFFFFF",
+                        },
+                        accent: {
+                            DEFAULT: "#FFCF6A", // Soft Gold
+                            foreground: "#3F2E00",
+                        },
+                        success: "#4CD395",
+                        warning: "#FFBE5C",
+                        error: "#FF6B6B",
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 30px rgba(0,0,0,0.12)',
+                        'glass-sm': '0 4px 20px rgba(0,0,0,0.08)',
+                        'glow': '0 0 15px rgba(127, 140, 255, 0.5)',
+                        'glow-success': '0 0 15px rgba(76, 211, 149, 0.4)',
+                        'glow-warning': '0 0 15px rgba(255, 190, 92, 0.4)',
+                    },
+                    backdropBlur: {
+                        'xs': '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Outfit:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --background: 220 33% 98%;
+            /* F6F7FB */
+            --foreground: 222 47% 11%;
+            --card: 0 0% 100%;
+            --card-foreground: 222 47% 11%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 234 89% 74%;
+
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-blur: 14px;
+        }
+
+        .dark {
+            --background: 225 6% 13%;
+            /* 1A1B22 */
+            --foreground: 210 40% 98%;
+            --card: 225 6% 13%;
+            --card-foreground: 210 40% 98%;
+            --muted: 217 19% 27%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --border: 217 19% 27%;
+            --input: 217 19% 27%;
+            --ring: 234 89% 74%;
+
+            --glass-bg: rgba(20, 20, 25, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: hsl(var(--background));
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+            -webkit-text-size-adjust: 100%;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* Aurora Background */
+        .aurora-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 0% 0%, rgba(127, 140, 255, 0.15), transparent 50%),
+                radial-gradient(circle at 100% 0%, rgba(169, 124, 255, 0.15), transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(255, 207, 106, 0.1), transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(76, 211, 149, 0.05), transparent 50%);
+            filter: blur(40px);
+            animation: auroraMove 20s infinite alternate;
+        }
+
+        @keyframes auroraMove {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-glass);
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark .glass-card {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(127, 140, 255, 0.15);
+            border-color: rgba(127, 140, 255, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
+
+        /* Animations */
+        .animate-enter {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hover-glow:hover {
+            box-shadow: 0 0 20px rgba(127, 140, 255, 0.4);
+        }
+
+        /* Inputs */
+        .input-glass {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s;
+        }
+
+        .dark .input-glass {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #7F8CFF;
+            box-shadow: 0 0 0 4px rgba(127, 140, 255, 0.1);
+            outline: none;
+        }
+
+        .dark .input-glass:focus {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        input:focus::placeholder {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Spotlight Effect */
+        .spotlight-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spotlight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.1), transparent 40%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .spotlight-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Typewriter Cursor */
+        .typewriter-cursor::after {
+            content: '|';
+            animation: blink 1s step-start infinite;
+            color: currentColor;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Progress Ring */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Toggles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #68D391;
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.75rem;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Floating Particles */
+        #particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float-particle 20s infinite linear;
+        }
+
+        @keyframes float-particle {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.5;
+            }
+
+            90% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(-100vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        /* Rainbow Mode */
+        .rainbow-mode .aurora-bg {
+            filter: hue-rotate(0deg);
+            animation: rainbow-cycle 5s linear infinite alternate !important;
+        }
+
+        @keyframes rainbow-cycle {
+            from {
+                filter: hue-rotate(0deg);
+            }
+
+            to {
+                filter: hue-rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="text-foreground antialiased min-h-screen flex flex-col">
+    <!-- Skeleton Screen -->
+    <div id="skeleton-screen" class="fixed inset-0 z-[60] bg-background flex flex-col transition-opacity duration-500">
+        <div class="aurora-bg"></div>
+        <!-- Header Skeleton -->
+        <div class="h-16 border-b border-white/10 glass flex items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 skeleton"></div>
+                <div class="w-24 h-6 skeleton"></div>
+            </div>
+            <div class="flex gap-2">
+                <div class="w-8 h-8 skeleton rounded-full"></div>
+                <div class="w-8 h-8 skeleton rounded-full"></div>
+            </div>
+        </div>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <!-- Stats Skeleton -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="h-32 skeleton rounded-2xl"></div>
+                <div class="h-32 skeleton rounded-2xl"></div>
+                <div class="h-32 skeleton rounded-2xl"></div>
+            </div>
+            <!-- Tabs Skeleton -->
+            <div class="flex gap-4">
+                <div class="w-24 h-10 skeleton rounded-full"></div>
+                <div class="w-24 h-10 skeleton rounded-full"></div>
+                <div class="w-24 h-10 skeleton rounded-full"></div>
+            </div>
+            <!-- List Skeleton -->
+            <div class="space-y-4">
+                <div class="h-20 skeleton rounded-xl"></div>
+                <div class="h-20 skeleton rounded-xl"></div>
+                <div class="h-20 skeleton rounded-xl"></div>
+                <div class="h-20 skeleton rounded-xl"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="aurora-bg"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 w-full glass border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 animate-enter" style="animation-delay: 0.1s;">
+                <div
+                    class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
+                    <i data-lucide="graduation-cap" class="text-white w-5 h-5"></i>
+                </div>
+                <h1
+                    class="font-display font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                    Tracker
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-1 sm:gap-2 animate-enter" style="animation-delay: 0.2s;">
+                <button onclick="toggleFilterPanel()"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                    title="Filter">
+                    <i data-lucide="filter" class="w-5 h-5 text-muted-foreground"></i>
+                </button>
+                <button onclick="openExportModal()"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                    title="Export/Import">
+                    <i data-lucide="download-cloud" class="w-5 h-5 text-muted-foreground"></i>
+                </button>
+                <div class="h-6 w-px bg-border mx-0.5 sm:mx-1"></div>
+                <button id="themeToggle"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                    <i data-lucide="moon" class="w-5 h-5"></i>
+                </button>
+                <button onclick="openManageModal()"
+                    class="ml-1 sm:ml-2 p-2 sm:px-4 sm:py-2 rounded-full bg-primary text-white font-medium text-sm shadow-glow hover:shadow-glow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                    <i data-lucide="settings-2" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline" data-i18n="manage">Manage</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-32">
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Total Students -->
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-enter"
+                style="animation-delay: 0.1s;">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i data-lucide="users" class="w-24 h-24 text-primary"></i>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-muted-foreground font-medium" data-i18n="totalStudents">Total Students
+                        </p>
+                        <h3 class="text-3xl font-display font-bold mt-1" id="stat-total-students">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Rate -->
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-enter"
+                style="animation-delay: 0.2s;">
+                <div class="flex items-center justify-between relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground font-medium" data-i18n="completionRate">Completion
+                                Rate</p>
+                            <h3 class="text-3xl font-display font-bold mt-1" id="stat-completion-rate">0%</h3>
+                        </div>
+                    </div>
+
+                    <!-- Donut Chart -->
+                    <div class="relative w-20 h-20">
+                        <svg class="w-full h-full transform -rotate-90 drop-shadow-[0_0_8px_rgba(76,211,149,0.4)]">
+                            <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="transparent"
+                                class="text-muted/20" />
+                            <circle id="completion-ring" cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8"
+                                fill="transparent" class="text-success transition-all duration-1000 ease-out"
+                                stroke-dasharray="226.2" stroke-dashoffset="226.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Tasks -->
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-enter"
+                style="animation-delay: 0.3s;">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i data-lucide="alert-circle" class="w-24 h-24 text-warning"></i>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-muted-foreground font-medium" data-i18n="pendingTasks">Pending Tasks</p>
+                        <h3 class="text-3xl font-display font-bold mt-1" id="stat-pending-tasks">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="space-y-6 animate-enter" style="animation-delay: 0.4s;">
+            <!-- Toolbar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <!-- Subject Tabs -->
+                <div class="flex-1 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                    <div id="subjectTabs" class="flex gap-2">
+                        <!-- Tabs injected here -->
+                    </div>
+                </div>
+
+                <!-- Search & Add -->
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-64">
+                        <i data-lucide="search"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                        <input type="text" id="searchInput" placeholder="Search students..."
+                            class="w-full pl-10 pr-4 py-2.5 rounded-full input-glass text-sm font-medium placeholder:text-muted-foreground/70">
+                    </div>
+
+                    <button onclick="document.getElementById('addStudentInput').focus()"
+                        class="w-10 h-10 rounded-full bg-white dark:bg-white/10 border border-border flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Add Student (Visible on all screens) -->
+            <form id="addStudentForm"
+                class="flex gap-3 items-center p-4 rounded-xl bg-primary/5 border border-primary/10">
+                <input id="addStudentInput" type="text" placeholder="Add new student name..."
+                    class="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium placeholder:text-muted-foreground">
+                <button type="submit" class="text-sm font-bold text-primary hover:text-primary/80"
+                    data-i18n="addStudentBtn">Add Student</button>
+            </form>
+
+            <!-- Student List Container -->
+            <div id="studentListContainer" class="grid grid-cols-1 gap-3">
+                <!-- Student rows injected here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-center">
+                <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <i data-lucide="search-x" class="w-8 h-8 text-muted-foreground"></i>
+                </div>
+                <h3 class="text-lg font-bold text-foreground">No students found</h3>
+                <p class="text-sm text-muted-foreground">Try adjusting your filters or search query.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Batch Action Bar -->
+    <div id="batchActionBar"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 glass px-6 py-3 rounded-full flex items-center gap-4 shadow-2xl transform translate-y-24 transition-transform duration-300">
+        <div class="flex items-center gap-2 border-r border-border pr-4">
+            <span class="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full" id="selectedCount">0</span>
+            <span class="text-sm font-bold text-foreground">Selected</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="batchMarkComplete()"
+                class="p-2 rounded-full hover:bg-success/10 text-success hover:scale-110 transition-all"
+                title="Mark Complete">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+            </button>
+            <button onclick="batchDelete()"
+                class="p-2 rounded-full hover:bg-error/10 text-error hover:scale-110 transition-all" title="Delete">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+            <button onclick="clearSelection()"
+                class="p-2 rounded-full hover:bg-muted text-muted-foreground hover:scale-110 transition-all"
+                title="Cancel">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Filter Panel (Right Sidebar) -->
+    <div id="filterPanel" class="fixed inset-0 z-50 pointer-events-none">
+        <div id="filterBackdrop"
+            class="absolute inset-0 bg-black/20 backdrop-blur-sm opacity-0 transition-opacity duration-300"
+            onclick="toggleFilterPanel()"></div>
+        <div id="filterContent"
+            class="absolute top-0 right-0 h-full w-80 bg-white/90 dark:bg-[#1A1B22]/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform translate-x-full transition-transform duration-300 pointer-events-auto flex flex-col">
+            <div class="p-6 border-b border-border flex justify-between items-center">
+                <h2 class="font-display font-bold text-xl">Filters & Sort</h2>
+                <button onclick="toggleFilterPanel()" class="p-2 hover:bg-muted rounded-full"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto space-y-8">
+                <!-- Sort -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sort By</label>
+                    <select id="sortSelect" class="w-full p-2.5 rounded-lg input-glass text-sm">
+                        <option value="manual">Custom Order</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="progress-asc">Progress (Low to High)</option>
+                        <option value="progress-desc">Progress (High to Low)</option>
+                        <option value="missing">Pending Tasks</option>
+                    </select>
+                </div>
+
+                <!-- Filter Status -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="filterStatus" value="all" checked
+                                class="w-4 h-4 text-primary border-border focus:ring-primary">
+                            <span class="text-sm font-medium">All Students</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="filterStatus" value="incomplete"
+                                class="w-4 h-4 text-primary border-border focus:ring-primary">
+                            <span class="text-sm font-medium">Incomplete Only</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="filterStatus" value="completed"
+                                class="w-4 h-4 text-primary border-border focus:ring-primary">
+                            <span class="text-sm font-medium">Completed Only</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 border-t border-border bg-muted/20">
+                <button onclick="resetFilters()"
+                    class="w-full py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-muted transition-colors">Reset
+                    Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Credit -->
+    <div class="py-6 text-center">
+        <p
+            class="text-xs font-medium text-muted-foreground/50 uppercase tracking-widest hover:text-primary transition-colors cursor-default">
+            Designed by Suphakrit
+        </p>
+    </div>
+    </div>
+
+    <!-- Manage Modal -->
+    <div id="manageModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm animate-enter" onclick="closeModal('manageModal')">
+        </div>
+        <div
+            class="relative w-full max-w-2xl mx-4 glass-card rounded-2xl overflow-hidden shadow-2xl animate-enter flex flex-col max-h-[85vh]">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+                <div>
+                    <h2 class="text-2xl font-display font-bold">Manage Subjects</h2>
+                    <p class="text-sm text-muted-foreground">Add subjects and define tasks.</p>
+                </div>
+                <button onclick="closeModal('manageModal')" class="p-2 hover:bg-white/10 rounded-full"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1" id="manageSubjectsList">
+                <!-- Subjects list injected here -->
+            </div>
+            <div class="p-6 border-t border-white/10 bg-muted/30 shrink-0">
+                <form onsubmit="handleAddSubject(event)" class="flex gap-3">
+                    <input id="newSubjectInput" name="name" type="text" placeholder="New Subject Name"
+                        class="flex-1 input-glass px-4 py-2 rounded-xl" required>
+                    <button type="submit"
+                        class="px-6 py-2 rounded-xl bg-primary text-white font-bold shadow-glow hover:bg-primary/90 transition-all">Add</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('editStudentModal')"></div>
+        <div class="relative w-full max-w-md mx-4 glass-card rounded-2xl overflow-hidden shadow-2xl animate-enter">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                <h2 class="text-xl font-display font-bold">Edit Student</h2>
+                <button onclick="closeModal('editStudentModal')" class="p-2 hover:bg-white/10 rounded-full"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="editStudentId">
+                <div class="flex flex-col items-center gap-3 mb-4">
+                    <div class="relative group cursor-pointer"
+                        onclick="document.getElementById('avatarUpload').click()">
+                        <div id="editStudentAvatar"
+                            class="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl font-bold text-white shadow-glow overflow-hidden object-cover">
+                            <!-- Avatar Image or Initials will be set here -->
+                        </div>
+                        <div
+                            class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="camera" class="w-8 h-8 text-white"></i>
+                        </div>
+                    </div>
+                    <input type="file" id="avatarUpload" accept="image/*" class="hidden"
+                        onchange="handleAvatarUpload(event)">
+                    <p class="text-xs text-muted-foreground">Click to change avatar</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-muted-foreground uppercase">Name</label>
+                    <input id="editStudentName" type="text" class="w-full input-glass px-4 py-2.5 rounded-xl">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-muted-foreground uppercase">Note</label>
+                    <textarea id="editStudentNote" rows="3"
+                        class="w-full input-glass px-4 py-2.5 rounded-xl resize-none"></textarea>
+                </div>
+                <div class="pt-4">
+                    <button onclick="deleteStudentFromEdit()"
+                        class="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 group">
+                        <i data-lucide="trash-2" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i> Delete
+                        Student
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 border-t border-white/10 bg-muted/30 flex justify-end gap-3">
+                <button onclick="closeModal('editStudentModal')"
+                    class="px-5 py-2.5 rounded-xl border border-border font-medium hover:bg-muted transition-colors">Cancel</button>
+                <button onclick="saveStudentDetails()"
+                    class="px-5 py-2.5 rounded-xl bg-primary text-white font-bold shadow-glow hover:bg-primary/90 transition-all">Save
+                    Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export/Import Modal -->
+    <div id="exportModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('exportModal')"></div>
+        <div class="relative w-full max-w-lg mx-4 glass-card rounded-2xl overflow-hidden shadow-2xl animate-enter">
+            <div class="p-6 border-b border-white/10">
+                <h2 class="text-xl font-display font-bold">Backup & Restore</h2>
+                <p class="text-sm text-muted-foreground">Export your data to keep it safe or transfer to another device.
+                </p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Export -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-foreground">Export Data</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportData('json')"
+                            class="flex flex-col items-center justify-center p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                            <i data-lucide="file-json"
+                                class="w-8 h-8 text-primary mb-2 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-sm font-medium">JSON</span>
+                        </button>
+                        <button onclick="exportData('csv')"
+                            class="flex flex-col items-center justify-center p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                            <i data-lucide="file-spreadsheet"
+                                class="w-8 h-8 text-success mb-2 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-sm font-medium">CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-foreground">Import Data</h3>
+                    <label
+                        class="flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-muted-foreground mb-2"></i>
+                            <p class="text-sm text-muted-foreground"><span class="font-bold">Click to upload</span> or
+                                drag and drop</p>
+                            <p class="text-xs text-muted-foreground mt-1">JSON files only</p>
+                        </div>
+                        <input id="importFile" type="file" class="hidden" accept=".json" onchange="handleImport(this)">
+                    </label>
+                </div>
+            </div>
+            <div class="p-4 border-t border-white/10 bg-muted/30 flex justify-end">
+                <button onclick="closeModal('exportModal')"
+                    class="px-5 py-2 rounded-xl bg-white dark:bg-white/10 border border-border text-sm font-bold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal (Tasks) -->
+    <div id="studentDetailModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('studentDetailModal')"></div>
+        <div
+            class="relative w-full max-w-xl mx-4 glass-card rounded-2xl overflow-hidden shadow-2xl animate-enter flex flex-col max-h-[85dvh]">
+            <div id="studentDetailContent" class="flex flex-col h-full overflow-hidden">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Context Menu -->
+    <div id="contextMenu"
+        class="fixed z-[100] hidden min-w-[160px] glass-card rounded-xl overflow-hidden shadow-2xl animate-enter origin-top-left">
+        <button onclick="handleContextAction('edit')"
+            class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2">
+            <i data-lucide="pencil" class="w-4 h-4"></i> Edit
+        </button>
+        <button onclick="handleContextAction('complete')"
+            class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-success/10 hover:text-success transition-colors flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Mark All
+        </button>
+        <div class="h-px bg-border my-1"></div>
+        <button onclick="handleContextAction('delete')"
+            class="w-full text-left px-4 py-2.5 text-sm font-medium text-error hover:bg-error/10 transition-colors flex items-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <script>
+        // --- Data & State ---
+        const STORAGE_KEY = 'elite-tracker-aurora';
+        const defaultData = {
+            subjects: [
+                {
+                    id: 'sub_default',
+                    name: 'Mathematics',
+                    assignments: [
+                        { id: 'a1', title: 'Worksheet 1', desc: 'Algebra Basics', dueDate: '' },
+                        { id: 'a2', title: 'Worksheet 2', desc: 'Linear Equations', dueDate: '' }
+                    ]
+                }
+            ],
+            students: [
+                { id: 1, name: 'Alice Smith', missing: ['a1'], note: '' },
+                { id: 2, name: 'Bob Jones', missing: [], note: 'Excellent work' }
+            ],
+            currentSubjectId: 'sub_default',
+            settings: { theme: 'light', lang: 'en' }
+        };
+
+        // --- Sound Manager (Web Audio API) ---
+        const SoundManager = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+
+            playTone(freq, type, duration, vol = 0.1) {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            playClick() { this.playTone(600, 'sine', 0.1, 0.05); },
+            playPop() { this.playTone(800, 'sine', 0.15, 0.1); },
+            playSuccess() {
+                this.playTone(600, 'sine', 0.1, 0.1);
+                setTimeout(() => this.playTone(800, 'sine', 0.1, 0.1), 100);
+                setTimeout(() => this.playTone(1200, 'sine', 0.3, 0.1), 200);
+            },
+            playDelete() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.25);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            },
+            playError() { this.playTone(300, 'sawtooth', 0.3, 0.1); }
+        };
+
+        let appData = loadData();
+        let filterState = {
+            search: '',
+            status: 'all', // all, incomplete, completed
+            sort: 'name' // name, progress-asc, progress-desc, missing
+        };
+        let selectedStudents = new Set();
+        let contextMenuTargetId = null;
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Remove Skeleton
+            setTimeout(() => {
+                const skeleton = document.getElementById('skeleton-screen');
+                if (skeleton) {
+                    skeleton.style.opacity = '0';
+                    setTimeout(() => skeleton.remove(), 500);
+                }
+            }, 800);
+
+            applyTheme(appData.settings.theme);
+            renderApp();
+
+            // Event Listeners
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterState.search = e.target.value.toLowerCase();
+                renderStudentList();
+            });
+
+            document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                filterState.sort = e.target.value;
+                renderStudentList();
+            });
+
+            document.querySelectorAll('input[name="filterStatus"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    filterState.status = e.target.value;
+                    renderStudentList();
+                });
+            });
+
+            // Spotlight Effect
+            document.addEventListener('mousemove', e => {
+                const card = e.target.closest('.spotlight-card');
+                if (card) {
+                    const rect = card.getBoundingClientRect();
+                    card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                    card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+                }
+            });
+
+            // Declare logo once for reuse
+            const logo = document.querySelector('header h1');
+
+            // Typewriter Intro
+            if (logo) {
+                const text = logo.innerText;
+                logo.innerText = '';
+                logo.classList.add('typewriter-cursor');
+
+                let i = 0;
+                const typeInterval = setInterval(() => {
+                    logo.innerText += text.charAt(i);
+                    i++;
+                    if (i >= text.length) {
+                        clearInterval(typeInterval);
+                        setTimeout(() => logo.classList.remove('typewriter-cursor'), 1000);
+                    }
+                }, 150);
+            }
+
+            // Keyboard Shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Search: /
+                if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+
+                // Close Modals: Escape
+                if (e.key === 'Escape') {
+                    ['manageModal', 'editStudentModal', 'studentDetailModal', 'exportModal'].forEach(id => closeModal(id));
+                    const filterContent = document.getElementById('filterContent');
+                    if (filterContent && !filterContent.classList.contains('translate-x-full')) toggleFilterPanel();
+                    document.getElementById('contextMenu').classList.add('hidden');
+                }
+
+                // Save: Ctrl+Enter
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    if (!document.getElementById('editStudentModal').classList.contains('hidden')) {
+                        saveStudentDetails();
+                    } else if (document.activeElement === document.getElementById('addStudentInput')) {
+                        document.getElementById('addStudentForm').requestSubmit();
+                    }
+                }
+            });
+
+            // Context Menu Listeners
+            document.addEventListener('contextmenu', e => {
+                const card = e.target.closest('.spotlight-card');
+                if (card) {
+                    e.preventDefault();
+                    const btn = card.querySelector('button[onclick*="openStudentDetail"]');
+                    if (btn) {
+                        const match = btn.getAttribute('onclick').match(/openStudentDetail\((\d+)\)/);
+                        if (match) {
+                            contextMenuTargetId = parseInt(match[1]);
+                            showContextMenu(e.clientX, e.clientY);
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener('click', () => {
+                const menu = document.getElementById('contextMenu');
+                if (!menu.classList.contains('hidden')) menu.classList.add('hidden');
+            });
+
+            // Konami Code
+            const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+            let konamiIndex = 0;
+            document.addEventListener('keydown', e => {
+                if (e.key === konamiCode[konamiIndex]) {
+                    konamiIndex++;
+                    if (konamiIndex === konamiCode.length) {
+                        toggleRainbowMode();
+                        konamiIndex = 0;
+                    }
+                } else {
+                    konamiIndex = 0;
+                }
+            });
+
+            // Mobile Secret Mode (Tap Logo 7 times)
+            let logoTaps = 0;
+            let logoTapTimer;
+            // logo is already defined above
+            if (logo) {
+                logo.style.cursor = 'pointer';
+                logo.addEventListener('click', () => {
+                    logoTaps++;
+                    clearTimeout(logoTapTimer);
+                    logoTapTimer = setTimeout(() => logoTaps = 0, 500);
+
+                    if (logoTaps === 7) {
+                        toggleRainbowMode();
+                        logoTaps = 0;
+                    }
+                });
+            }
+
+            // Drag & Drop Sorting
+            const listContainer = document.getElementById('studentListContainer');
+            let draggedItem = null;
+
+            listContainer.addEventListener('dragstart', e => {
+                draggedItem = e.target.closest('[draggable]');
+                if (draggedItem) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', draggedItem.dataset.id);
+                    draggedItem.classList.add('opacity-50', 'scale-95');
+                }
+            });
+
+            listContainer.addEventListener('dragend', e => {
+                if (draggedItem) {
+                    draggedItem.classList.remove('opacity-50', 'scale-95');
+                    draggedItem = null;
+                }
+            });
+
+            listContainer.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(listContainer, e.clientY);
+                const currentDraggable = document.querySelector('.opacity-50'); // The one being dragged
+                if (currentDraggable) {
+                    if (afterElement == null) {
+                        listContainer.appendChild(currentDraggable);
+                    } else {
+                        listContainer.insertBefore(currentDraggable, afterElement);
+                    }
+                }
+            });
+
+            listContainer.addEventListener('drop', e => {
+                e.preventDefault();
+
+                // Update Data Model
+                const newOrderIds = Array.from(listContainer.children).map(child => parseInt(child.dataset.id)).filter(id => !isNaN(id));
+
+                if (newOrderIds.length > 0) {
+                    const reorderedStudents = [];
+                    const idMap = new Map(appData.students.map(s => [s.id, s]));
+
+                    newOrderIds.forEach(id => {
+                        if (idMap.has(id)) {
+                            reorderedStudents.push(idMap.get(id));
+                            idMap.delete(id);
+                        }
+                    });
+
+                    // Append remaining (filtered out) students
+                    idMap.forEach(student => reorderedStudents.push(student));
+
+                    appData.students = reorderedStudents;
+
+                    // Switch to Manual Sort
+                    document.getElementById('sortSelect').value = 'manual';
+                    filterState.sort = 'manual';
+
+                    saveData();
+                    showToast('Order updated');
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('[draggable]:not(.opacity-50)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            // Floating Particles
+            const particlesContainer = document.createElement('div');
+            particlesContainer.id = 'particles-container';
+            document.body.prepend(particlesContainer);
+
+            for (let i = 0; i < 20; i++) {
+                createParticle();
+            }
+
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 5 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.animationDuration = `${Math.random() * 20 + 10}s`;
+                particle.style.animationDelay = `-${Math.random() * 20}s`;
+                particlesContainer.appendChild(particle);
+            }
+
+            function toggleRainbowMode() {
+                document.body.classList.toggle('rainbow-mode');
+                try { SoundManager.playSuccess(); } catch (e) { }
+                showToast(document.body.classList.contains('rainbow-mode') ? '🌈 Party Mode ON!' : 'Party Mode OFF');
+            }
+        });
+
+        // --- Core Functions ---
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            // Try to load old data if new key doesn't exist
+            if (!saved) {
+                const oldData = localStorage.getItem('elite-tracker-data');
+                if (oldData) return JSON.parse(oldData);
+                return structuredClone(defaultData);
+            }
+            try {
+                return { ...structuredClone(defaultData), ...JSON.parse(saved) };
+            } catch {
+                return structuredClone(defaultData);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        }
+
+        function currentSubject() {
+            return appData.subjects.find(s => s.id === appData.currentSubjectId) || appData.subjects[0];
+        }
+
+        // --- Rendering ---
+        function renderApp() {
+            renderTabs();
+            renderStats();
+            renderStudentList();
+            updateBatchActionBar();
+            lucide.createIcons();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('subjectTabs');
+            if (!appData.subjects.length) {
+                container.innerHTML = '<span class="text-sm text-error font-medium px-4">No subjects</span>';
+                return;
+            }
+            container.innerHTML = appData.subjects.map(sub => {
+                const isActive = sub.id === appData.currentSubjectId;
+                return `
+                    <button onclick="switchSubject('${sub.id}')" 
+                        class="whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2
+                        ${isActive
+                        ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-glow scale-105'
+                        : 'bg-white/50 dark:bg-white/5 text-muted-foreground hover:bg-white dark:hover:bg-white/10 hover:text-foreground'}">
+                        ${sub.name}
+                        <span class="text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10'} px-1.5 py-0.5 rounded-full">${sub.assignments.length}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function renderStats() {
+            const subject = currentSubject();
+            if (!subject) return;
+
+            const totalStudents = appData.students.length;
+            const totalAssignments = subject.assignments.length * totalStudents;
+
+            let totalMissing = 0;
+            appData.students.forEach(s => {
+                totalMissing += s.missing.filter(m => subject.assignments.some(a => a.id === m)).length;
+            });
+
+            const totalCompleted = totalAssignments - totalMissing;
+            const rate = totalAssignments === 0 ? 0 : Math.round((totalCompleted / totalAssignments) * 100);
+
+            document.getElementById('stat-total-students').innerText = totalStudents;
+            document.getElementById('stat-completion-rate').innerText = rate + '%';
+            document.getElementById('stat-pending-tasks').innerText = totalMissing;
+
+            // Update Donut Chart
+            const circle = document.getElementById('completion-ring');
+            if (circle) {
+                const circumference = 226.2;
+                const offset = circumference - (rate / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+            }
+        }
+
+        const gradients = [
+            'from-red-500 to-orange-500', 'from-orange-500 to-amber-500', 'from-amber-500 to-yellow-500',
+            'from-yellow-500 to-lime-500', 'from-lime-500 to-green-500', 'from-green-500 to-emerald-500',
+            'from-emerald-500 to-teal-500', 'from-teal-500 to-cyan-500', 'from-cyan-500 to-sky-500',
+            'from-sky-500 to-blue-500', 'from-blue-500 to-indigo-500', 'from-indigo-500 to-violet-500',
+            'from-violet-500 to-purple-500', 'from-purple-500 to-fuchsia-500', 'from-fuchsia-500 to-pink-500',
+            'from-pink-500 to-rose-500'
+        ];
+        const getGradient = (name) => {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return gradients[Math.abs(hash) % gradients.length];
+        };
+
+        function renderStudentList() {
+            const container = document.getElementById('studentListContainer');
+            const subject = currentSubject();
+
+            if (!subject) {
+                container.innerHTML = '';
+                return;
+            }
+
+            // Filter & Sort Logic
+            let students = [...appData.students];
+
+            // Search
+            if (filterState.search) {
+                students = students.filter(s => s.name.toLowerCase().includes(filterState.search));
+            }
+
+            // Status Filter
+            if (filterState.status !== 'all') {
+                students = students.filter(s => {
+                    const missingCount = s.missing.filter(m => subject.assignments.some(a => a.id === m)).length;
+                    if (filterState.status === 'completed') return missingCount === 0;
+                    if (filterState.status === 'incomplete') return missingCount > 0;
+                    return true;
+                });
+            }
+
+            // Sort
+            students.sort((a, b) => {
+                const total = subject.assignments.length;
+                const missingA = a.missing.filter(m => subject.assignments.some(x => x.id === m)).length;
+                const missingB = b.missing.filter(m => subject.assignments.some(x => x.id === m)).length;
+                const progressA = total === 0 ? 0 : (total - missingA) / total;
+                const progressB = total === 0 ? 0 : (total - missingB) / total;
+
+                if (filterState.sort === 'manual') return 0; // Keep array order
+                if (filterState.sort === 'name') return a.name.localeCompare(b.name);
+                if (filterState.sort === 'progress-asc') return progressA - progressB;
+                if (filterState.sort === 'progress-desc') return progressB - progressA;
+                if (filterState.sort === 'missing') return missingB - missingA;
+                return 0;
+            });
+
+            if (students.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('emptyState').classList.add('flex');
+                container.innerHTML = '';
+                return;
+            } else {
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('flex');
+            }
+
+            container.innerHTML = students.map((student, index) => {
+                const missingCount = student.missing.filter(m => subject.assignments.some(a => a.id === m)).length;
+                const total = subject.assignments.length;
+                const progress = total === 0 ? 0 : Math.round(((total - missingCount) / total) * 100);
+                const isComplete = missingCount === 0;
+                const isSelected = selectedStudents.has(student.id);
+
+                // Highlight Name
+                let displayName = student.name;
+                if (filterState.search) {
+                    const regex = new RegExp(`(${filterState.search})`, 'gi');
+                    displayName = student.name.replace(regex, '<span class="bg-primary/20 text-primary rounded px-0.5">$1</span>');
+                }
+
+                // Achievement Badges
+                let badge = '';
+                if (progress === 100) badge = '<span title="Master" class="text-lg">🏆</span>';
+                else if (progress >= 80) badge = '<span title="Rising Star" class="text-lg">🌟</span>';
+                else if (progress >= 50) badge = '<span title="On Track" class="text-lg">🔥</span>';
+
+                // Avatar Logic
+                let avatarHTML = '';
+                if (student.avatar) {
+                    avatarHTML = `<img src="${student.avatar}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarHTML = student.name.charAt(0);
+                }
+
+                return `
+                    <div draggable="true" data-id="${student.id}" class="glass-card spotlight-card rounded-xl p-4 flex items-center justify-between gap-4 group animate-enter ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}" style="animation-delay: ${index * 0.05}s">
+                        <div class="flex items-center gap-4 flex-1 min-w-0">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br ${getGradient(student.name)} flex items-center justify-center text-sm font-bold text-white shadow-inner transition-opacity ${isSelected ? 'opacity-0' : 'opacity-100'} overflow-hidden">
+                                    ${avatarHTML}
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}">
+                                     <input type="checkbox" checked onchange="toggleSelection(${student.id})" class="w-5 h-5 text-primary border-border rounded focus:ring-primary cursor-pointer">
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'hidden' : ''}">
+                                     <input type="checkbox" onchange="toggleSelection(${student.id})" class="w-5 h-5 text-primary border-border rounded focus:ring-primary cursor-pointer">
+                                </div>
+                            </div>
+                            
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-foreground truncate group-hover:text-primary transition-colors cursor-pointer" onclick="openStudentDetail(${student.id})">${displayName}</h4>
+                                    ${badge}
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full ${isComplete ? 'bg-success shadow-glow-success' : 'bg-primary'}" style="width: ${progress}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium text-muted-foreground">${progress}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <span class="hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-bold ${isComplete
+                        ? 'bg-success/10 text-success border border-success/20'
+                        : 'bg-warning/10 text-warning border border-warning/20'}">
+                                ${isComplete ? 'Complete' : `${missingCount} Pending`}
+                            </span>
+                            
+                            <div class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button onclick="openStudentDetail(${student.id})" class="p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" title="View Details">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openEditStudentModal(${student.id})" class="p-2 rounded-lg hover:bg-muted transition-colors" title="Edit">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- Batch Actions ---
+        function toggleSelection(id) {
+            if (selectedStudents.has(id)) {
+                selectedStudents.delete(id);
+            } else {
+                selectedStudents.add(id);
+            }
+            renderStudentList();
+            updateBatchActionBar();
+        }
+
+        function updateBatchActionBar() {
+            const bar = document.getElementById('batchActionBar');
+            const count = document.getElementById('selectedCount');
+
+            if (selectedStudents.size > 0) {
+                bar.classList.remove('translate-y-24');
+                count.innerText = selectedStudents.size;
+            } else {
+                bar.classList.add('translate-y-24');
+            }
+        }
+
+        function clearSelection() {
+            selectedStudents.clear();
+            renderStudentList();
+            updateBatchActionBar();
+        }
+
+        function batchMarkComplete() {
+            const subject = currentSubject();
+            if (!subject) return;
+
+            selectedStudents.forEach(id => {
+                const student = appData.students.find(s => s.id === id);
+                if (student) {
+                    student.missing = student.missing.filter(m => !subject.assignments.some(a => a.id === m));
+                }
+            });
+
+            saveData();
+            renderApp();
+            triggerConfetti();
+            SoundManager.playSuccess(); // Added Sound
+            showToast(`${selectedStudents.size} students marked complete`);
+            clearSelection();
+        }
+
+        function batchDelete() {
+            if (!confirm(`Delete ${selectedStudents.size} students?`)) return;
+
+            SoundManager.playDelete(); // Added Sound
+            appData.students = appData.students.filter(s => !selectedStudents.has(s.id));
+            saveData();
+            renderApp();
+            showToast(`${selectedStudents.size} students deleted`, 'error');
+            clearSelection();
+        }
+
+        // ...
+
+        function toggleAttendanceStatus(btn, status, studentId) {
+            // Update Data
+            const student = appData.students.find(s => s.id === studentId);
+            if (student) {
+                // Initialize attendance object if missing
+                if (!student.attendance) student.attendance = {};
+
+                // Toggle off if clicking same status
+                const dateKey = new Date().toISOString().split('T')[0];
+                if (student.attendance[dateKey] === status) {
+                    delete student.attendance[dateKey];
+                    status = null; // Reset
+                } else {
+                    student.attendance[dateKey] = status;
+                }
+                saveData();
+            }
+
+            // Visual Update (Re-render to ensure consistency or just update classes)
+            // For simplicity and robustness, let's re-render the list item or just the buttons
+            // But since we are saving data, a full render is safest to keep state in sync
+            renderStudentList();
+            SoundManager.playClick();
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#7F8CFF', '#A97CFF', '#FFCF6A', '#4CD395']
+            });
+        }
+
+        // --- Actions ---
+        function switchSubject(id) {
+            SoundManager.playClick();
+            appData.currentSubjectId = id;
+            selectedStudents.clear(); // Clear selection on subject switch
+            saveData();
+            renderApp();
+        }
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const input = document.getElementById('addStudentInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            SoundManager.playSuccess();
+            const subject = currentSubject();
+            const missing = subject ? subject.assignments.map(a => a.id) : [];
+
+            appData.students.push({
+                id: Date.now(),
+                name,
+                missing,
+                note: ''
+            });
+
+            saveData();
+            renderApp();
+            input.value = '';
+            showToast('Student added successfully');
+        }
+
+        // --- Modals Logic ---
+        function toggleBodyScroll(lock) {
+            if (lock) {
+                document.body.classList.add('overflow-hidden');
+            } else {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal || modal.classList.contains('hidden')) return;
+
+            const backdrop = modal.querySelector('div[onclick*="closeModal"]');
+            const content = modal.querySelector('.glass-card');
+
+            if (backdrop) {
+                backdrop.classList.add('transition-opacity', 'duration-300', 'ease-in-out');
+                backdrop.style.opacity = '0';
+            }
+
+            if (content) {
+                content.classList.remove('animate-enter');
+                content.classList.add('transition-all', 'duration-300', 'ease-in-out');
+                content.style.opacity = '0';
+                content.style.transform = 'scale(0.95)';
+            }
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                toggleBodyScroll(false);
+
+                // Reset styles for next open
+                if (backdrop) {
+                    backdrop.classList.remove('transition-opacity', 'duration-300', 'ease-in-out');
+                    backdrop.style.opacity = '';
+                }
+                if (content) {
+                    content.classList.remove('transition-all', 'duration-300', 'ease-in-out');
+                    content.style.opacity = '';
+                    content.style.transform = '';
+                    content.classList.add('animate-enter');
+                }
+            }, 300);
+        }
+
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterPanel');
+            const backdrop = document.getElementById('filterBackdrop');
+            const content = document.getElementById('filterContent');
+
+            const isClosed = content.classList.contains('translate-x-full');
+
+            if (isClosed) {
+                panel.classList.remove('pointer-events-none');
+                backdrop.classList.remove('opacity-0');
+                content.classList.remove('translate-x-full');
+            } else {
+                panel.classList.add('pointer-events-none');
+                backdrop.classList.add('opacity-0');
+                content.classList.add('translate-x-full');
+            }
+        }
+
+        function resetFilters() {
+            filterState = { search: '', status: 'all', sort: 'name' };
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortSelect').value = 'name';
+            document.querySelector('input[name="filterStatus"][value="all"]').checked = true;
+            renderStudentList();
+            toggleFilterPanel();
+        }
+
+        // --- Manage Modal ---
+        function openManageModal() {
+            const modal = document.getElementById('manageModal');
+            modal.classList.remove('hidden');
+            renderManageList();
+        }
+
+        function renderManageList() {
+            const list = document.getElementById('manageSubjectsList');
+            list.innerHTML = appData.subjects.map(sub => `
+                <div class="bg-white/50 dark:bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <input type="text" value="${sub.name}" onchange="updateSubjectName('${sub.id}', this.value)" 
+                            class="bg-transparent font-bold text-lg border-b border-transparent focus:border-primary focus:outline-none w-full mr-4 placeholder:text-muted-foreground/50">
+                        <button onclick="deleteSubject('${sub.id}')" class="text-muted-foreground hover:text-error transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                    
+                    <div class="space-y-2 pl-4 border-l-2 border-primary/20">
+                        ${sub.assignments.map(a => `
+                            <div class="flex items-center gap-2 group">
+                                <div class="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(255,207,106,0.8)] mt-2 self-start"></div>
+                                <div class="flex-1 min-w-0 grid gap-1">
+                                    <input type="text" value="${a.title}" onchange="updateAssignmentTitle('${sub.id}', '${a.id}', this.value)"
+                                        class="text-sm bg-transparent border-b border-transparent focus:border-primary focus:outline-none w-full text-foreground placeholder:text-muted-foreground/50" placeholder="Task Name">
+                                    
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="calendar" class="w-3 h-3 text-muted-foreground"></i>
+                                        <input type="date" value="${a.dueDate}" onchange="updateAssignmentDate('${sub.id}', '${a.id}', this.value)"
+                                            class="text-[10px] bg-transparent border-none focus:ring-0 text-muted-foreground p-0 h-auto font-medium">
+                                    </div>
+                                </div>
+                                <button onclick="deleteAssignment('${sub.id}', '${a.id}')" class="text-muted-foreground hover:text-error transition-colors self-start mt-1"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        `).join('')}
+                        
+                        <form onsubmit="handleAddAssignment(event, '${sub.id}')" class="flex gap-2 mt-3 items-center">
+                            <input name="title" placeholder="New Task..." class="flex-1 text-xs bg-white/50 dark:bg-black/20 rounded px-2 py-1 border-none focus:ring-1 focus:ring-primary" required>
+                            <input name="dueDate" type="date" class="text-xs bg-white/50 dark:bg-black/20 rounded px-2 py-1 border-none focus:ring-1 focus:ring-primary w-24">
+                            <button type="submit" class="text-xs bg-primary/10 text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                        </form>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function updateAssignmentTitle(subId, assignId, newTitle) {
+            const sub = appData.subjects.find(s => s.id === subId);
+            const assign = sub?.assignments.find(a => a.id === assignId);
+            if (assign) {
+                assign.title = newTitle;
+                saveData();
+                renderApp();
+            }
+        }
+
+        function updateAssignmentDate(subId, assignId, newDate) {
+            const sub = appData.subjects.find(s => s.id === subId);
+            const assign = sub?.assignments.find(a => a.id === assignId);
+            if (assign) {
+                assign.dueDate = newDate;
+                saveData();
+                renderApp();
+            }
+        }
+
+        function handleAddSubject(e) {
+            e.preventDefault();
+            const input = e.target.elements.name;
+            const name = input.value.trim();
+            if (name) {
+                appData.subjects.push({
+                    id: 'sub_' + Date.now(),
+                    name,
+                    assignments: []
+                });
+                saveData();
+                renderManageList();
+                renderApp();
+                input.value = '';
+                showToast('Subject added');
+            }
+        }
+
+        function updateSubjectName(id, newName) {
+            const sub = appData.subjects.find(s => s.id === id);
+            if (sub) {
+                sub.name = newName;
+                saveData();
+                renderApp();
+            }
+        }
+
+        function deleteSubject(id) {
+            if (!confirm('Delete this subject and all its tasks?')) return;
+            try { SoundManager.playDelete(); } catch (e) { console.warn(e); }
+
+            appData.subjects = appData.subjects.filter(s => s.id !== id);
+            if (appData.currentSubjectId === id) appData.currentSubjectId = appData.subjects[0]?.id || null;
+            saveData();
+            renderManageList();
+            renderApp();
+            showToast('Subject deleted');
+        }
+
+        function handleAddAssignment(e, subId) {
+            e.preventDefault();
+            const form = e.target;
+            const title = form.elements.title.value.trim();
+            const dueDate = form.elements.dueDate.value;
+
+            if (title) {
+                const sub = appData.subjects.find(s => s.id === subId);
+                if (sub) {
+                    const newAssignId = 'a_' + Date.now();
+                    sub.assignments.push({
+                        id: newAssignId,
+                        title,
+                        desc: '',
+                        dueDate
+                    });
+
+                    // Add to missing for all students
+                    appData.students.forEach(s => s.missing.push(newAssignId));
+
+                    saveData();
+                    renderManageList();
+                    renderApp();
+                    form.reset();
+                    showToast('Task added');
+                }
+            }
+        }
+
+        function deleteAssignment(subId, assignId) {
+            if (!confirm('Delete this task?')) return;
+            try { SoundManager.playDelete(); } catch (e) { console.warn(e); }
+
+            const sub = appData.subjects.find(s => s.id === subId);
+            if (sub) {
+                sub.assignments = sub.assignments.filter(a => a.id !== assignId);
+                appData.students.forEach(s => s.missing = s.missing.filter(m => m !== assignId));
+                saveData();
+                renderManageList();
+                renderApp();
+                showToast('Task deleted');
+            }
+        }
+
+        function toggleBodyScroll(lock) {
+            if (lock) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.height = '100dvh';
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.height = '';
+            }
+        }
+
+        // --- Student Detail Modal ---
+        function openStudentDetail(id) {
+            const student = appData.students.find(s => s.id === id);
+            const subject = currentSubject();
+            if (!student || !subject) return;
+
+            const modal = document.getElementById('studentDetailModal');
+            const content = document.getElementById('studentDetailContent');
+
+            toggleBodyScroll(true);
+
+            // Initial Render of Structure
+            content.innerHTML = `
+                <div class="p-6 border-b border-white/10 flex justify-between items-start bg-gradient-to-r from-primary/10 to-transparent shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-display font-bold">${student.name}</h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-sm text-muted-foreground">ID: ${student.id}</span>
+                            ${student.note ? `<span class="text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded-full border border-accent/20">${student.note}</span>` : ''}
+                        </div>
+                    </div>
+                    <button onclick="closeModal('studentDetailModal')" class="p-2 hover:bg-white/10 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
+                    <!-- Progress Circle -->
+                    <div class="flex flex-col items-center justify-center py-4">
+                        <div class="relative w-32 h-32">
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="transparent" class="text-muted/20" />
+                                <circle id="detail-progress-ring" cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="transparent" 
+                                    stroke-dasharray="351.86" stroke-dashoffset="351.86"
+                                    class="text-primary transition-all duration-1000 ease-out" 
+                                    stroke-linecap="round" />
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                <span id="detail-progress-text" class="text-3xl font-bold font-display">0%</span>
+                                <span class="text-[10px] uppercase tracking-wider text-muted-foreground">Complete</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks List -->
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Tasks</h3>
+                        <div id="detail-task-list" class="space-y-3">
+                            <!-- Tasks injected here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 border-t border-white/10 bg-muted/30 shrink-0">
+                    <button onclick="markAllComplete(${student.id})" class="w-full py-3 rounded-xl bg-primary text-white font-bold shadow-glow hover:bg-primary/90 transition-all">
+                        Mark All Complete
+                    </button>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            updateStudentDetailUI(student, subject); // Populate initial data
+            lucide.createIcons();
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+
+            // Cancel previous animation
+            if (obj.dataset.animId) cancelAnimationFrame(obj.dataset.animId);
+
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Easing (Ease Out Cubic) for smooth natural feel
+                const ease = 1 - Math.pow(1 - progress, 3);
+
+                const current = Math.floor(start + (end - start) * ease);
+                obj.innerText = `${current}%`;
+
+                if (progress < 1) {
+                    obj.dataset.animId = requestAnimationFrame(update);
+                } else {
+                    obj.innerText = `${end}%`;
+                    delete obj.dataset.animId;
+                }
+            }
+
+            obj.dataset.animId = requestAnimationFrame(update);
+        }
+
+        function updateStudentDetailUI(student, subject) {
+            const missingCount = student.missing.filter(m => subject.assignments.some(a => a.id === m)).length;
+            const total = subject.assignments.length;
+            const progress = total === 0 ? 0 : Math.round(((total - missingCount) / total) * 100);
+
+            // Update Ring
+            const ring = document.getElementById('detail-progress-ring');
+            const text = document.getElementById('detail-progress-text');
+
+            if (ring && text) {
+                const offset = 351.86 * (1 - progress / 100);
+                ring.style.strokeDashoffset = offset;
+
+                // Animate Number
+                const currentText = text.innerText.replace('%', '');
+                const startVal = parseInt(currentText) || 0;
+                animateValue('detail-progress-text', startVal, progress, 1000);
+
+                // Color update
+                if (progress === 100) {
+                    ring.classList.remove('text-primary');
+                    ring.classList.add('text-success');
+                } else {
+                    ring.classList.add('text-primary');
+                    ring.classList.remove('text-success');
+                }
+            }
+
+            // Update List
+            const listContainer = document.getElementById('detail-task-list');
+            if (listContainer) {
+                const sortedAssignments = [...subject.assignments].sort((a, b) => {
+                    const isMissingA = student.missing.includes(a.id);
+                    const isMissingB = student.missing.includes(b.id);
+                    return (isMissingA === isMissingB) ? 0 : isMissingA ? -1 : 1;
+                });
+
+                listContainer.innerHTML = sortedAssignments.map(a => {
+                    const isMissing = student.missing.includes(a.id);
+                    const isOverdue = isMissing && a.dueDate && new Date(a.dueDate) < new Date().setHours(0, 0, 0, 0);
+
+                    return `
+                        <label class="flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group
+                            ${!isMissing
+                            ? 'bg-success/5 border-success/20'
+                            : isOverdue
+                                ? 'bg-error/5 border-error/20 hover:border-error/50'
+                                : 'bg-white/50 dark:bg-white/5 border-border hover:border-primary/50'}">
+                            <div class="relative flex items-center justify-center">
+                                <input type="checkbox" ${!isMissing ? 'checked' : ''} 
+                                    onchange="toggleTask(${student.id}, '${a.id}')"
+                                    class="peer appearance-none w-6 h-6 rounded-lg border-2 border-muted-foreground/30 checked:bg-success checked:border-success transition-all cursor-pointer">
+                                <i data-lucide="check" class="w-4 h-4 text-white absolute opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <div class="font-bold text-sm ${!isMissing ? 'text-muted-foreground line-through' : 'text-foreground'}">${a.title}</div>
+                                    ${a.dueDate ? `
+                                        <div class="text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1
+                                            ${!isMissing ? 'bg-success/10 text-success' : isOverdue ? 'bg-error/10 text-error' : 'bg-muted text-muted-foreground'}">
+                                            <i data-lucide="calendar" class="w-3 h-3"></i>
+                                            ${new Date(a.dueDate).toLocaleDateString()}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                ${a.desc ? `<div class="text-xs text-muted-foreground mt-0.5">${a.desc}</div>` : ''}
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        }
+
+        function toggleTask(studentId, assignId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if (!student) return;
+            const subject = currentSubject();
+
+            SoundManager.playPop();
+            if (student.missing.includes(assignId)) {
+                student.missing = student.missing.filter(m => m !== assignId);
+
+                // Check if all tasks for CURRENT SUBJECT are complete
+                const remainingInSubject = student.missing.filter(m => subject.assignments.some(a => a.id === m));
+
+                if (remainingInSubject.length === 0) {
+                    triggerConfetti();
+                    SoundManager.playSuccess();
+
+                    // Auto-close modal after celebration
+                    setTimeout(() => {
+                        closeModal('studentDetailModal');
+                    }, 1500);
+                }
+            } else {
+                student.missing.push(assignId);
+            }
+            saveData();
+            renderApp();
+
+            // Smooth Update
+            updateStudentDetailUI(student, subject);
+        }
+
+        function markAllComplete(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            const subject = currentSubject();
+            if (student && subject) {
+                SoundManager.playSuccess();
+                student.missing = student.missing.filter(m => !subject.assignments.some(a => a.id === m));
+                saveData();
+                renderApp();
+                triggerConfetti();
+                showToast('All tasks marked complete');
+
+                // Smooth Update
+                updateStudentDetailUI(student, subject);
+            }
+        }
+
+        // --- Edit Student Modal ---
+        let currentAvatarBase64 = null;
+
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Resize to max 150x150 for storage efficiency
+                    const maxSize = 150;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height *= maxSize / width;
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width *= maxSize / height;
+                            height = maxSize;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    currentAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+                    // Update Preview
+                    const avatarDiv = document.getElementById('editStudentAvatar');
+                    avatarDiv.innerHTML = `<img src="${currentAvatarBase64}" class="w-full h-full object-cover">`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function openEditStudentModal(id) {
+            const student = appData.students.find(s => s.id === id);
+            if (!student) return;
+
+            document.getElementById('editStudentId').value = student.id;
+            document.getElementById('editStudentName').value = student.name;
+
+            // Reset Avatar State
+            currentAvatarBase64 = student.avatar || null;
+            const avatarDiv = document.getElementById('editStudentAvatar');
+
+            // Set Gradient Background
+            avatarDiv.className = `w-24 h-24 rounded-full bg-gradient-to-br ${getGradient(student.name)} flex items-center justify-center text-3xl font-bold text-white shadow-glow overflow-hidden object-cover`;
+
+            if (student.avatar) {
+                avatarDiv.innerHTML = `<img src="${student.avatar}" class="w-full h-full object-cover">`;
+            } else {
+                avatarDiv.innerHTML = student.name.charAt(0);
+            }
+
+            document.getElementById('editStudentModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function saveStudentDetails() {
+            const id = parseInt(document.getElementById('editStudentId').value);
+            const newName = document.getElementById('editStudentName').value.trim();
+
+            if (!newName) {
+                showToast('Name cannot be empty', 'error');
+                return;
+            }
+
+            const student = appData.students.find(s => s.id === id);
+            if (student) {
+                student.name = newName;
+                if (currentAvatarBase64) {
+                    student.avatar = currentAvatarBase64;
+                }
+                saveData();
+                renderApp();
+                closeModal('editStudentModal');
+                showToast('Student updated successfully');
+            }
+        }
+        function deleteStudentFromEdit() {
+            const idVal = document.getElementById('editStudentId').value;
+            // Try parsing, but also keep raw value for comparison
+            const idNum = parseInt(idVal);
+
+            if (!idVal) {
+                showToast('Error: No Student ID found', 'error');
+                return;
+            }
+
+            if (confirm('Permanently delete this student?')) {
+                try {
+                    SoundManager.playDelete();
+                } catch (e) { console.warn(e); }
+
+                // Find index using loose comparison to handle String/Number mismatch
+                const index = appData.students.findIndex(s => s.id == idVal);
+
+                if (index === -1) {
+                    showToast(`Error: Student ID ${idVal} not found`, 'error');
+                    return;
+                }
+
+                // Remove from data
+                const deletedId = appData.students[index].id;
+                appData.students.splice(index, 1);
+
+                // Remove from selection
+                if (selectedStudents.has(deletedId)) {
+                    selectedStudents.delete(deletedId);
+                }
+
+                saveData();
+                renderApp();
+                updateBatchActionBar();
+                closeModal('editStudentModal');
+                showToast('Student deleted successfully');
+            }
+        }
+
+        // --- PDF Report ---
+        async function generatePDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const subject = currentSubject();
+
+            // Header
+            doc.setFontSize(20);
+            doc.text(`${subject.name} - Report`, 14, 22);
+            doc.setFontSize(10);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+
+            // Stats
+            const totalStudents = appData.students.length;
+            const totalAssignments = subject.assignments.length * totalStudents;
+            let totalMissing = 0;
+            appData.students.forEach(s => {
+                totalMissing += s.missing.filter(m => subject.assignments.some(a => a.id === m)).length;
+            });
+            const completionRate = totalAssignments === 0 ? 0 : Math.round(((totalAssignments - totalMissing) / totalAssignments) * 100);
+
+            doc.text(`Students: ${totalStudents} | Completion: ${completionRate}%`, 14, 34);
+
+            // Table
+            const headers = [['Student Name', 'Progress', 'Missing Tasks', 'Status']];
+            const data = appData.students.map(s => {
+                const missing = s.missing.filter(m => subject.assignments.some(a => a.id === m));
+                const progress = subject.assignments.length === 0 ? 0 : Math.round(((subject.assignments.length - missing.length) / subject.assignments.length) * 100);
+                const status = missing.length === 0 ? 'Complete' : 'Pending';
+                const missingTitles = missing.map(m => subject.assignments.find(a => a.id === m)?.title).join(', ');
+
+                return [s.name, `${progress}%`, missingTitles || '-', status];
+            });
+
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [127, 140, 255] },
+            });
+
+            doc.save(`${subject.name}_Report.pdf`);
+            showToast('PDF Report Generated');
+            SoundManager.playSuccess();
+        }
+
+        // --- Export / Import ---
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            toggleBodyScroll(true);
+        }
+
+        function exportData(format) {
+            const dataStr = JSON.stringify(appData, null, 2);
+            if (format === 'json') {
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `elite-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+            } else if (format === 'csv') {
+                // Simple CSV export logic
+                let csv = 'Student Name,Subject,Missing Tasks\n';
+                appData.students.forEach(s => {
+                    appData.subjects.forEach(sub => {
+                        const missing = sub.assignments.filter(a => s.missing.includes(a.id)).map(a => a.title).join('; ');
+                        csv += `"${s.name}","${sub.name}","${missing}"\n`;
+                    });
+                });
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `elite-tracker-export-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+            }
+            showToast('Export started');
+        }
+
+        function handleImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.students && imported.subjects) {
+                        if (confirm('Merge imported data with current data? Existing IDs will be skipped.')) {
+
+                            // 1. Merge Subjects
+                            let addedSubjects = 0;
+                            imported.subjects.forEach(sub => {
+                                if (!appData.subjects.some(s => s.id === sub.id)) {
+                                    appData.subjects.push(sub);
+                                    addedSubjects++;
+                                }
+                            });
+
+                            // 2. Prepare for Progress Reset
+                            const allAssignmentIds = appData.subjects.flatMap(s => s.assignments.map(a => a.id));
+                            const shouldResetProgress = confirm('Set all imported students to "Incomplete" (0% Progress)?\nClick OK to reset, Cancel to keep progress from file.');
+
+                            // 3. Merge Students
+                            let addedStudents = 0;
+                            imported.students.forEach(stu => {
+                                // Apply reset if requested
+                                if (shouldResetProgress) {
+                                    stu.missing = [...allAssignmentIds];
+                                }
+
+                                // Check for duplicate ID OR duplicate Name (Case-insensitive)
+                                const isDuplicate = appData.students.some(s =>
+                                    s.id === stu.id ||
+                                    s.name.trim().toLowerCase() === stu.name.trim().toLowerCase()
+                                );
+
+                                if (!isDuplicate) {
+                                    appData.students.push(stu);
+                                    addedStudents++;
+                                }
+                            });
+
+                            saveData();
+                            renderApp();
+                            closeModal('exportModal');
+                            showToast(`Imported: ${addedStudents} students, ${addedSubjects} subjects`);
+                        }
+                    } else {
+                        alert('Invalid file format');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Error parsing JSON');
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // --- Utils ---
+        function toggleTheme() {
+            const btn = document.getElementById('themeToggle');
+            const icon = btn.querySelector('svg') || btn.querySelector('i'); // Lucide renders SVG, but initially it's i
+
+            // Animate Icon
+            if (icon) {
+                icon.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                icon.style.transform = 'rotate(180deg) scale(0)';
+            }
+
+            setTimeout(() => {
+                const newTheme = appData.settings.theme === 'dark' ? 'light' : 'dark';
+                appData.settings.theme = newTheme;
+                applyTheme(newTheme);
+                saveData();
+
+                // Re-select icon after innerHTML update
+                const newIcon = btn.querySelector('svg');
+                if (newIcon) {
+                    newIcon.style.transform = 'rotate(-180deg) scale(0)';
+                    newIcon.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+
+                    // Trigger reflow
+                    void newIcon.offsetWidth;
+
+                    newIcon.style.transform = 'rotate(0deg) scale(1)';
+                }
+            }, 250);
+        }
+
+        function applyTheme(theme) {
+            const btn = document.getElementById('themeToggle');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                if (btn) btn.innerHTML = '<i data-lucide="sun" class="w-5 h-5"></i>';
+            } else {
+                document.documentElement.classList.remove('dark');
+                if (btn) btn.innerHTML = '<i data-lucide="moon" class="w-5 h-5"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `glass px-4 py-3 rounded-xl flex items-center gap-3 shadow-glass animate-enter ${type === 'error' ? 'border-error/50 text-error' : 'border-success/50 text-success'}`;
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-5 h-5"></i> <span class="font-bold text-sm text-foreground">${msg}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Context Menu ---
+        function showContextMenu(x, y) {
+            const menu = document.getElementById('contextMenu');
+            menu.classList.remove('hidden');
+
+            const rect = menu.getBoundingClientRect();
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+
+            if (x + rect.width > winWidth) x -= rect.width;
+            if (y + rect.height > winHeight) y -= rect.height;
+
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        }
+
+        function handleContextAction(action) {
+            if (!contextMenuTargetId) return;
+
+            if (action === 'edit') openEditStudentModal(contextMenuTargetId);
+            if (action === 'complete') markAllComplete(contextMenuTargetId);
+            if (action === 'delete') {
+                if (confirm('Permanently delete this student?')) {
+                    try { SoundManager.playDelete(); } catch (e) { }
+                    appData.students = appData.students.filter(s => s.id !== contextMenuTargetId);
+                    saveData();
+                    renderApp();
+                    showToast('Student deleted');
+                }
+            }
+            document.getElementById('contextMenu').classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>
