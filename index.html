@@ -36,6 +36,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2canvas & jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -188,6 +191,7 @@
         /* Range Slider Styling */
         input[type=range] {
             -webkit-appearance: none;
+            appearance: none;
             background: transparent;
         }
 
@@ -308,9 +312,9 @@
                 </div>
             </div>
 
-            <button onclick="toggleTheme()"
+            <button onclick="exportJPEG()" title="บันทึกเป็นรูปภาพ"
                 class="p-3 glass-card rounded-xl hover:scale-105 active:scale-95 transition-all">
-                <i data-lucide="moon" id="theme-icon" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
+                <i data-lucide="image" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
             </button>
         </header>
 
@@ -602,7 +606,6 @@
         let exchangeRate = 31.59;
         let inputs = { videos: 1, views: 10000, rpm: 6, years: 10 };
         let currentValues = {
-            daily: 0, monthly: 0, annual: 0,
             daily: 0, monthly: 0, annual: 0,
             taxProgressive: 0, taxEffective: 0,
             salary: 0, growth: 0, investment: 0,
@@ -993,51 +996,84 @@
             calculate();
         };
 
-        const toggleTheme = () => {
-            document.body.parentElement.classList.toggle('dark');
-            const isDark = document.body.parentElement.classList.contains('dark');
-            document.getElementById('theme-icon').dataset.lucide = isDark ? 'sun' : 'moon';
-            lucide.createIcons();
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        const exportJPEG = async () => {
+            // Get the main content area
+            const element = document.querySelector('.max-w-6xl');
+
+            // Hide the header button temporarily
+            const headerBtn = document.querySelector('header button');
+            if (headerBtn) headerBtn.style.visibility = 'hidden';
+
+            try {
+                // Capture the element as canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#111827',
+                    logging: false
+                });
+
+                // Convert to JPEG and download
+                const link = document.createElement('a');
+                const date = new Date().toLocaleDateString('th-TH').replace(/\//g, '-');
+                link.download = `CreatorCalc_${date}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+
+            } catch (e) {
+                console.error('Export Error:', e);
+                alert('เกิดข้อผิดพลาดในการบันทึกภาพ');
+            } finally {
+                // Restore button visibility
+                if (headerBtn) headerBtn.style.visibility = 'visible';
+            }
         };
 
         // Initialize UI State
+        // Initialize UI State
         const initUI = () => {
+            // 1. Create Icons first (Priority)
+            try {
+                if (window.lucide) {
+                    lucide.createIcons();
+                } else {
+                    console.error('Lucide library not loaded');
+                }
+            } catch (e) { console.error('Error creating icons', e); }
+
+            // 2. Theme (Safe)
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.parentElement.classList.remove('dark');
-                document.getElementById('theme-icon').dataset.lucide = 'moon';
             }
 
-            // Load Saved Data
-            const savedData = localStorage.getItem('creatorCalcData');
-            if (savedData) {
-                try {
+            // 3. Load Data & Restore State
+            try {
+                const savedData = localStorage.getItem('creatorCalcData');
+                if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed.inputs) inputs = { ...inputs, ...parsed.inputs };
                     if (parsed.currentCurrency) currentCurrency = parsed.currentCurrency;
-                } catch (e) {
-                    console.error('Error loading data', e);
                 }
+
+                document.getElementById('input-videos').value = formatWithCommas(inputs.videos);
+                document.getElementById('input-views').value = formatWithCommas(inputs.views);
+                document.getElementById('input-rpm').value = formatWithCommas(inputs.rpm);
+                document.getElementById('years-slider').value = inputs.years;
+                document.getElementById('rpm-currency-label').innerText = currentCurrency;
+
+                if (currentCurrency === 'THB') {
+                    document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
+                    document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
+                } else {
+                    document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
+                    document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
+                }
+            } catch (e) {
+                console.error('Error restoring state', e);
             }
 
-            // Set Inputs to Saved Values
-            document.getElementById('input-videos').value = formatWithCommas(inputs.videos);
-            document.getElementById('input-views').value = formatWithCommas(inputs.views);
-            document.getElementById('input-rpm').value = formatWithCommas(inputs.rpm);
-            document.getElementById('years-slider').value = inputs.years;
-            document.getElementById('rpm-currency-label').innerText = currentCurrency;
-
-            // Set initial button states
-            if (currentCurrency === 'THB') {
-                document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
-                document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
-            } else {
-                document.getElementById('btn-usd').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-sm bg-white dark:bg-gray-700 text-red-500";
-                document.getElementById('btn-thb').className = "px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-400 hover:text-gray-900 dark:hover:text-white";
-            }
-
-            // Init Spotlight Effect
+            // 4. Effects & Chart
             document.querySelectorAll('.glass-card').forEach(card => {
                 card.addEventListener('mousemove', e => {
                     const rect = card.getBoundingClientRect();
@@ -1048,9 +1084,10 @@
                 });
             });
 
-            lucide.createIcons();
-            initChart(); // Init chart before calculating
-            calculate();
+            setTimeout(() => {
+                initChart();
+                calculate();
+            }, 100);
         };
 
         // Wait for chart.js to load if needed, but usually safe to call in module or end of body
