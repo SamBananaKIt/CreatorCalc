@@ -132,7 +132,7 @@ function App() {
           </div>
 
           <div className="text-center md:text-right space-y-2">
-            <p className="text-sm font-bold text-gray-400 dark:text-gray-500 italic">© {new Date().getFullYear()} Precision Built by Antigravity</p>
+            <p className="text-sm font-bold text-gray-400 dark:text-gray-500 italic">© 2026 Precision Built by Suphakrit</p>
             <p className="text-[10px] uppercase font-black tracking-widest text-gray-400/60 max-w-xs ml-auto">
               Data driven snapshots based on global YouTube averages. Always consult a financial advisor.
             </p>

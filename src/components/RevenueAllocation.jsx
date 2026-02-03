@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { formatCurrency, calculateAllocation, projectInvestment } from '../utils/calculations';
 import { Wallet, Wrench, LineChart, TrendingUp, Info, ArrowRight, PieChart } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedCounter from './AnimatedCounter';
 import {
     AreaChart,
     Area,
@@ -15,29 +16,34 @@ import {
 
 const AllocationCard = ({ title, percentage, amount, annualAmount, icon: Icon, colorClass, description, currency }) => (
     <motion.div
+        key={amount}
+        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
         whileHover={{ y: -5, scale: 1.02 }}
         className={`glass-card p-8 border-none luxury-shadow relative overflow-hidden group`}
     >
         <div className={`absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl -mr-16 -mt-16 rounded-full group-hover:opacity-20 transition-opacity ${colorClass.replace('text-', 'bg-')}`}></div>
 
         <div className="flex justify-between items-start mb-6 relative z-10">
-            <div className={`p-4 rounded-2xl ${colorClass.replace('text-', 'bg-').replace('500', '500/10')} ${colorClass}`}>
-                <Icon size={28} />
+            <div className={`p-4 rounded-2xl ${colorClass.replace('text-', 'bg-').replace('500', '500/10')} ${colorClass} group-hover:scale-110 transition-transform`}>
+                <Icon size={24} />
             </div>
-            <span className={`text-3xl font-black opacity-10 group-hover:opacity-30 transition-opacity ${colorClass}`}>{percentage}%</span>
+            <span className={`text-2xl font-black opacity-10 group-hover:opacity-30 transition-opacity ${colorClass}`}>{percentage}%</span>
         </div>
 
-        <h3 className="text-xl font-black mb-2 relative z-10 text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium relative z-10 leading-relaxed">{description}</p>
+        <h3 className="text-lg font-black mb-2 relative z-10 text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 font-medium relative z-10 leading-relaxed italic">{description}</p>
 
         <div className="space-y-2 relative z-10">
-            <div className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
-                {formatCurrency(amount, currency)}
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">/mo</span>
+            <div className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter flex items-end gap-1">
+                <AnimatedCounter value={amount} formatter={(val) => formatCurrency(val, currency)} />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">/mo</span>
             </div>
-            <div className="text-sm font-bold text-gray-400 flex items-center gap-2">
+            <div className="text-xs font-bold text-gray-400 flex items-center gap-2">
                 <div className="w-4 h-px bg-gray-200 dark:bg-gray-700"></div>
-                {formatCurrency(annualAmount, currency)} <span className="text-[10px] opacity-60">ANNUAL</span>
+                <AnimatedCounter value={annualAmount} formatter={(val) => formatCurrency(val, currency)} />
+                <span className="text-[9px] opacity-60">ANNUAL</span>
             </div>
         </div>
     </motion.div>
@@ -214,15 +220,26 @@ const RevenueAllocation = ({ monthlyRevenue, currency = 'THB' }) => {
 
                     <div className="lg:col-span-4 flex flex-col justify-between gap-8">
                         <div className="space-y-6">
-                            <div className="p-8 bg-gray-50 dark:bg-gray-800/80 rounded-3xl border border-gray-100 dark:border-gray-700/50 space-y-6 luxury-shadow">
+                            <motion.div
+                                key={latestProjection.value}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="p-8 bg-gray-50 dark:bg-gray-800/80 rounded-3xl border border-gray-100 dark:border-gray-700/50 space-y-6 luxury-shadow"
+                            >
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Passive Income (4% Rule)</span>
-                                    <div className="text-2xl font-black text-pink-500">{formatCurrency(latestProjection.monthlyPassiveIncome, currency)}<span className="text-xs ml-1 opacity-50">/mo</span></div>
+                                    <div className="text-2xl font-black text-pink-500 flex items-end gap-1">
+                                        <AnimatedCounter value={latestProjection.monthlyPassiveIncome} formatter={(val) => formatCurrency(val, currency)} />
+                                        <span className="text-xs mb-1 opacity-50">/mo</span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <span className="text-[10px] m font-black uppercase tracking-[0.2em] text-green-500">Market Performance (7% Yield)</span>
-                                    <div className="text-xl font-black text-green-500">+{formatCurrency(latestProjection.returns, currency)}</div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-500">Market Performance (7% Yield)</span>
+                                    <div className="text-xl font-black text-green-500 flex items-center gap-1">
+                                        <span>+</span>
+                                        <AnimatedCounter value={latestProjection.returns} formatter={(val) => formatCurrency(val, currency)} />
+                                    </div>
                                 </div>
 
                                 <div className="h-px bg-gray-200 dark:bg-gray-700"></div>
@@ -234,9 +251,11 @@ const RevenueAllocation = ({ monthlyRevenue, currency = 'THB' }) => {
                                             +{returnPercentage}% GROWTH
                                         </div>
                                     </div>
-                                    <div className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">{formatCurrency(latestProjection.value, currency)}</div>
+                                    <div className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
+                                        <AnimatedCounter value={latestProjection.value} formatter={(val) => formatCurrency(val, currency)} />
+                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         </div>
 
                         <div className="p-6 bg-red-50/50 dark:bg-red-500/5 rounded-2xl border border-red-100 dark:border-red-500/10 flex gap-4">
