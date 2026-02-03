@@ -9,47 +9,68 @@ function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-const InputField = ({ label, icon: Icon, value, onChange, min, max, step, error, type = "number" }) => (
-    <div className="flex flex-col space-y-2">
-        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            <Icon size={16} className="text-red-500" />
-            {label}
-        </label>
-        <div className="relative group">
-            <input
-                type={type}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                min={min}
-                max={max}
-                step={step}
-                className={cn(
-                    "w-full px-4 py-4 bg-white dark:bg-gray-800/50 border rounded-2xl outline-none transition-all duration-300",
-                    "focus:ring-4 focus:ring-red-500/10 focus:border-red-500 shadow-sm",
-                    "input-glass",
-                    error ? "border-red-500" : "border-gray-100 dark:border-gray-700/50 group-hover:border-red-200 dark:group-hover:border-red-500/30"
+const InputField = ({ label, icon: Icon, value, onChange, min, max, step, error, type = "text", inputMode = "numeric" }) => {
+    const displayValue = (val) => {
+        if (!val && val !== 0) return "";
+        const numericString = val.toString().replace(/,/g, '');
+        if (isNaN(numericString)) return val;
+
+        const parts = numericString.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join('.');
+    };
+
+    const handleTextChange = (text) => {
+        const rawValue = text.replace(/,/g, '');
+        if (step && rawValue.endsWith('.')) {
+            onChange(rawValue);
+            return;
+        }
+        if (rawValue === "" || !isNaN(rawValue)) {
+            onChange(rawValue);
+        }
+    };
+
+    return (
+        <div className="flex flex-col space-y-2">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <Icon size={16} className="text-red-500" />
+                {label}
+            </label>
+            <div className="relative group">
+                <input
+                    type={type}
+                    inputMode={inputMode}
+                    value={displayValue(value)}
+                    onChange={(e) => handleTextChange(e.target.value)}
+                    className={cn(
+                        "w-full px-4 py-4 bg-white dark:bg-gray-800/50 border rounded-2xl outline-none transition-all duration-300 font-sans",
+                        "focus:ring-4 focus:ring-red-500/10 focus:border-red-500 shadow-sm text-gray-900 dark:text-white",
+                        "input-glass",
+                        error ? "border-red-500" : "border-gray-100 dark:border-gray-700/50 group-hover:border-red-200 dark:group-hover:border-red-500/30"
+                    )}
+                />
+                {error && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">
+                        <AlertCircle size={18} />
+                    </div>
                 )}
-            />
-            {error && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">
-                    <AlertCircle size={18} />
-                </div>
-            )}
+            </div>
+            <AnimatePresence>
+                {error && (
+                    <motion.span
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="text-xs text-red-500 mt-1 font-medium pl-1"
+                    >
+                        {error}
+                    </motion.span>
+                )}
+            </AnimatePresence>
         </div>
-        <AnimatePresence>
-            {error && (
-                <motion.span
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="text-xs text-red-500 mt-1 font-medium pl-1"
-                >
-                    {error}
-                </motion.span>
-            )}
-        </AnimatePresence>
-    </div>
-);
+    );
+};
 
 const Calculator = ({ onCalculate, currency, onCurrencyChange }) => {
     const [inputs, setInputs] = useState({
@@ -96,23 +117,27 @@ const Calculator = ({ onCalculate, currency, onCurrencyChange }) => {
             newRpm = currentRpm / USD_TO_THB;
         }
 
-        setInputs(prev => ({ ...prev, rpm: Number(newRpm.toFixed(2)) }));
+        setInputs(prev => ({ ...prev, rpm: newRpm.toFixed(2).toString() }));
         onCurrencyChange(newCurr);
     };
 
     useEffect(() => {
+        const vPerDay = parseFloat(inputs.videosPerDay) || 0;
+        const aViews = parseFloat(inputs.averageViews) || 0;
+        const rRate = parseFloat(inputs.rpm) || 0;
+
         const isValid = Object.values(errors).every(e => !e) &&
-            inputs.videosPerDay >= 0 &&
-            inputs.averageViews >= 0 &&
-            inputs.rpm >= 0;
+            vPerDay >= 0 &&
+            aViews >= 0 &&
+            rRate >= 0;
 
         if (isValid) {
             // Calculate using 30 days for monthly
-            const monthlyVideos = inputs.videosPerDay * 30;
+            const monthlyVideos = vPerDay * 30;
             const results = calculateRevenue(
                 monthlyVideos,
-                inputs.averageViews,
-                inputs.rpm
+                aViews,
+                rRate
             );
             onCalculate(results);
         }
@@ -160,7 +185,6 @@ const Calculator = ({ onCalculate, currency, onCurrencyChange }) => {
                     icon={Video}
                     value={inputs.videosPerDay}
                     onChange={(val) => handleChange('videosPerDay', val)}
-                    min={0}
                     error={errors.videosPerDay}
                 />
                 <InputField
@@ -168,7 +192,6 @@ const Calculator = ({ onCalculate, currency, onCurrencyChange }) => {
                     icon={Eye}
                     value={inputs.averageViews}
                     onChange={(val) => handleChange('averageViews', val)}
-                    min={0}
                     error={errors.averageViews}
                 />
                 <InputField
@@ -176,10 +199,9 @@ const Calculator = ({ onCalculate, currency, onCurrencyChange }) => {
                     icon={DollarSign}
                     value={inputs.rpm}
                     onChange={(val) => handleChange('rpm', val)}
-                    min={0}
-                    max={1000}
                     step={0.01}
                     error={errors.rpm}
+                    inputMode="decimal"
                 />
             </div>
 
