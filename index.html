@@ -997,27 +997,30 @@
         };
 
         const exportJPEG = async () => {
-            // Get the main content area
-            const element = document.querySelector('.max-w-6xl');
-
             // Hide the header button temporarily
             const headerBtn = document.querySelector('header button');
             if (headerBtn) headerBtn.style.visibility = 'hidden';
 
+            // Scroll to top to ensure sticky headers render correctly
+            window.scrollTo(0, 0);
+
             try {
-                // Capture the element as canvas
-                const canvas = await html2canvas(element, {
+                // Capture the entire body
+                const canvas = await html2canvas(document.body, {
                     scale: 2,
                     useCORS: true,
-                    backgroundColor: '#111827',
-                    logging: false
+                    allowTaint: true,
+                    backgroundColor: '#111827', // Force dark background
+                    logging: false,
+                    windowWidth: document.documentElement.scrollWidth,
+                    windowHeight: document.documentElement.scrollHeight
                 });
 
                 // Convert to JPEG and download
                 const link = document.createElement('a');
                 const date = new Date().toLocaleDateString('th-TH').replace(/\//g, '-');
                 link.download = `CreatorCalc_${date}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
                 link.click();
 
             } catch (e) {
