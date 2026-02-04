@@ -291,6 +291,22 @@
         .dark ::-webkit-scrollbar-thumb {
             background: rgba(31, 41, 55, 0.8);
         }
+
+        /* Export Fixes */
+        body.export-mode .glass-card,
+        body.export-mode header,
+        body.export-mode .input-glass {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(17, 24, 39, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: none !important;
+        }
+
+        body.export-mode .aurora-bg,
+        body.export-mode #star-layer {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -347,7 +363,7 @@
                         <i data-lucide="video" class="w-3.5 h-3.5"></i> จำนวนคลิป / วัน
                     </label>
                     <input type="text" id="input-videos" value="1" inputmode="decimal"
-                        oninput="handleInput('videos', this.value)"
+                        oninput="handleInput('videos', this.value)" onblur="handleBlur('videos')"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
 
@@ -357,7 +373,7 @@
                         <i data-lucide="eye" class="w-3.5 h-3.5"></i> ยอดวิวเฉลี่ย
                     </label>
                     <input type="text" id="input-views" value="10,000" inputmode="decimal"
-                        oninput="handleInput('views', this.value)"
+                        oninput="handleInput('views', this.value)" onblur="handleBlur('views')"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
 
@@ -368,7 +384,7 @@
                             id="rpm-currency-label">THB</span>)
                     </label>
                     <input type="text" id="input-rpm" value="6" inputmode="decimal"
-                        oninput="handleInput('rpm', this.value)"
+                        oninput="handleInput('rpm', this.value)" onblur="handleBlur('rpm')"
                         class="w-full px-5 py-4 input-glass rounded-xl outline-none text-2xl font-black text-gray-900 dark:text-white placeholder-gray-300">
                 </div>
             </div>
@@ -888,16 +904,16 @@
 
         // --- Logic ---
         const calculate = () => {
-            const v = parseFloat(inputs.videos.toString().replace(/,/g, '')) || 0;
-            const vw = parseFloat(inputs.views.toString().replace(/,/g, '')) || 0;
-            const r = parseFloat(inputs.rpm.toString().replace(/,/g, '')) || 0;
+            const vPerDay = parseFloat(inputs.videos.toString().replace(/,/g, '')) || 0;
+            const views = parseFloat(inputs.views.toString().replace(/,/g, '')) || 0;
+            const rpm = parseFloat(inputs.rpm.toString().replace(/,/g, '')) || 0;
 
-            const monthlyRevenue = ((v * 30) * vw / 1000) * r;
-            const dailyRevenue = monthlyRevenue / 30;
+            const dailyRevenue = vPerDay * (views / 1000) * rpm;
+            const monthlyRevenue = dailyRevenue * 30;
             const annualRevenue = monthlyRevenue * 12;
 
             // Secondary Metrics
-            const dailyViews = v * vw;
+            const dailyViews = vPerDay * views;
             const monthlyViews = dailyViews * 30;
             const annualViews = monthlyViews * 12;
             const monthlyVideos = v * 30;
@@ -960,16 +976,37 @@
         };
 
         // --- Event Handlers ---
+        // --- Event Handlers ---
         const handleInput = (key, val) => {
+            // Allow numbers, one dot, and commas
             const cleanVal = val.replace(/[^0-9.,]/g, '');
             const raw = cleanVal.replace(/,/g, '');
+
+            // Check for multiple dots
+            if ((raw.match(/\./g) || []).length > 1) return;
+
             inputs[key] = raw;
             const el = document.getElementById(`input-${key}`);
-            const formatted = formatWithCommas(raw);
-            if (el.value !== formatted) el.value = formatted;
+
+            // Only format if it's a valid number and doesn't end with a dot or zero (allow typing 5. or 5.0)
+            if (!raw.endsWith('.') && !raw.endsWith('.0') && !raw.match(/\.\d+0$/)) {
+                const formatted = formatWithCommas(raw);
+                if (el.value !== formatted && raw !== '') {
+                    // el.value = formatted; // Disable auto-formatting while typing decimals to prevent cursor jumps or issues
+                }
+            }
+
             saveData();
             calculate();
         };
+
+        const handleBlur = (key) => {
+            const el = document.getElementById(`input-${key}`);
+            const raw = inputs[key];
+            if (raw) {
+                el.value = formatWithCommas(raw);
+            }
+        }
 
         const handleYearChange = (val) => {
             inputs.years = parseInt(val);
@@ -1001,19 +1038,53 @@
             const headerBtn = document.querySelector('header button');
             if (headerBtn) headerBtn.style.visibility = 'hidden';
 
-            // Scroll to top to ensure sticky headers render correctly
+            // Toggle Export Mode
+            document.body.classList.add('export-mode');
+
+            // Force Dark Mode for Export (since we use dark bg)
+            const html = document.documentElement;
+            const wasDark = html.classList.contains('dark');
+            if (!wasDark) html.classList.add('dark');
+
+            // Get Main Content
+            const mainContent = document.querySelector('.max-w-6xl');
+
+            // Save original styles
+            const originalStyles = {
+                width: mainContent.style.width,
+                maxWidth: mainContent.style.maxWidth,
+                padding: mainContent.style.padding,
+                background: mainContent.style.background,
+                margin: mainContent.style.margin,
+                borderRadius: mainContent.style.borderRadius,
+                bodyWidth: document.body.style.width // Save body width
+            };
+
+            // Force Desktop Layout & Styling for Capture
+            document.body.style.width = '1250px'; // Ensure body is wide enough
+            mainContent.style.width = '1200px';
+            mainContent.style.maxWidth = 'none';
+            mainContent.style.padding = '40px';
+            mainContent.style.background = '#111827'; // Dark background for the card container
+            mainContent.style.margin = '0 auto'; // Center it
+            mainContent.style.borderRadius = '0';
+
             window.scrollTo(0, 0);
 
+            // Wait for layout update
+            await new Promise(resolve => setTimeout(resolve, 300)); // Increased wait time
+
             try {
-                // Capture the entire body
-                const canvas = await html2canvas(document.body, {
+                // Capture ONLY the main content
+                const canvas = await html2canvas(mainContent, {
                     scale: 2,
                     useCORS: true,
                     allowTaint: true,
-                    backgroundColor: '#111827', // Force dark background
+                    backgroundColor: '#111827',
                     logging: false,
-                    windowWidth: document.documentElement.scrollWidth,
-                    windowHeight: document.documentElement.scrollHeight
+                    windowWidth: 1250,
+                    windowHeight: mainContent.scrollHeight + 100,
+                    ignoreElements: (element) => element.classList.contains('aurora-bg')
                 });
 
                 // Convert to JPEG and download
@@ -1027,8 +1098,19 @@
                 console.error('Export Error:', e);
                 alert('เกิดข้อผิดพลาดในการบันทึกภาพ');
             } finally {
-                // Restore button visibility
+                // Restore State
+                document.body.classList.remove('export-mode');
+                if (!wasDark) html.classList.remove('dark'); // Restore theme
                 if (headerBtn) headerBtn.style.visibility = 'visible';
+
+                // Restore Styles
+                document.body.style.width = originalStyles.bodyWidth;
+                mainContent.style.width = originalStyles.width;
+                mainContent.style.maxWidth = originalStyles.maxWidth;
+                mainContent.style.padding = originalStyles.padding;
+                mainContent.style.background = originalStyles.background;
+                mainContent.style.margin = originalStyles.margin;
+                mainContent.style.borderRadius = originalStyles.borderRadius;
             }
         };
 
