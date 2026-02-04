@@ -978,8 +978,15 @@
 
         // --- Event Handlers ---
         const handleInput = (key, val) => {
+            // Heuristic: If user types "0,23" (comma followed by 1-2 digits at end), treat as decimal
+            // But keep "10,000" (comma followed by 3 digits) as thousand separator
+            let adjustedVal = val;
+            if (val.match(/,\d{1,2}$/)) {
+                adjustedVal = val.replace(',', '.');
+            }
+
             // Allow numbers, one dot, and commas
-            const cleanVal = val.replace(/[^0-9.,]/g, '');
+            const cleanVal = adjustedVal.replace(/[^0-9.,]/g, '');
             const raw = cleanVal.replace(/,/g, '');
 
             // Check for multiple dots
