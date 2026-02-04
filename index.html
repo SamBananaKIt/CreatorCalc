@@ -913,14 +913,15 @@
             const annualRevenue = monthlyRevenue * 12;
 
             // Secondary Metrics
+            // Secondary Metrics
             const dailyViews = vPerDay * views;
             const monthlyViews = dailyViews * 30;
             const annualViews = monthlyViews * 12;
-            const monthlyVideos = v * 30;
-            const annualVideos = monthlyVideos * 365; // Approx for annual display
+            const monthlyVideos = vPerDay * 30;
+            const annualVideos = vPerDay * 365;
 
             document.getElementById('res-daily-views').innerText = formatWithCommas(dailyViews.toFixed(0));
-            document.getElementById('res-daily-rpm').innerText = formatWithCommas(r.toFixed(2));
+            document.getElementById('res-daily-rpm').innerText = formatWithCommas(rpm.toFixed(2));
 
             document.getElementById('res-monthly-views').innerText = formatWithCommas(monthlyViews.toFixed(0));
             document.getElementById('res-monthly-videos').innerText = formatWithCommas(monthlyVideos.toFixed(0));
@@ -975,7 +976,6 @@
             updateChart(investment);
         };
 
-        // --- Event Handlers ---
         // --- Event Handlers ---
         const handleInput = (key, val) => {
             // Allow numbers, one dot, and commas
